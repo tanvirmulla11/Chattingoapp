@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - chattingo-net
+
+  backend:
+    build: ./backend
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/chattingo_db?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      JWT_SECRET: s3cr3tKey_Th1sIsA32ByteMinimumLengthKey_ForJWT123456
+      CORS_ALLOWED_ORIGINS: http://72.60.111.20
+    depends_on:
+      - db
+    networks:
+      - chattingo-net
+
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: chattingo_db
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    networks:
+      - chattingo-net
+
+networks:
+  chattingo-net:
+    driver: bridge
+
