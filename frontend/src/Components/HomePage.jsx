@@ -37,16 +37,14 @@ function HomePage() {
   const messageContainerRef = useRef(null);
 
   useEffect(() => {
-    // Scroll to bottom whenever messages change
     if (messageContainerRef.current) {
-      messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+      messageContainerRef.current.scrollTop =
+        messageContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Function to establish a WebSocket connection
   const connect = () => {
-    if (!token) return; // don't attempt without auth
-    
+    if (!token) return;
     const client = new Client({
       webSocketFactory: () => new SockJs(`${BASE_API_URL}/ws`),
       connectHeaders: {
@@ -55,52 +53,37 @@ function HomePage() {
       },
       onConnect: onConnect,
       onStompError: onError,
-      debug: (str) => {
-        console.log('STOMP: ' + str);
-      },
+      debug: (str) => console.log("STOMP: " + str),
     });
-    
+
     setStompClient(client);
     client.activate();
   };
 
-  // Function to get a specific cookie by name
   function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) {
-      return parts.pop().split(";").shift();
-    }
+    if (parts.length === 2) return parts.pop().split(";").shift();
   }
 
-  // Callback for WebSocket connection error
-  const onError = (error) => {
-    console.log("on error ", error);
-  };
+  const onError = (error) => console.log("on error ", error);
 
-  // Callback for successful WebSocket connection
   const onConnect = () => {
     setIsConnected(true);
-
-    // Subscribe to the current chat messages based on the chat type
     if (stompClient && currentChat) {
       if (currentChat.group) {
-        // Subscribe to group chat messages
         stompClient.subscribe(`/group/${currentChat?.id}`, onMessageReceive);
       } else {
-        // Subscribe to direct user messages
         stompClient.subscribe(`/user/${currentChat?.id}`, onMessageReceive);
       }
     }
   };
 
-  // Callback to handle received messages from WebSocket
   const onMessageReceive = (payload) => {
     const receivedMessage = JSON.parse(payload.body);
     setMessages((prevMessages) => [...prevMessages, receivedMessage]);
   };
 
-  // Effect to establish a WebSocket connection
   useEffect(() => {
     connect();
     return () => {
@@ -109,71 +92,53 @@ function HomePage() {
           stompClient.deactivate();
           setIsConnected(false);
         }
-      } catch (e) { }
+      } catch (e) {}
     };
   }, []);
 
-  // Effect to subscribe to a chat when connected
   useEffect(() => {
     if (isConnected && stompClient && currentChat?.id) {
       const subscription = currentChat.group
         ? stompClient.subscribe(`/group/${currentChat.id}`, onMessageReceive)
         : stompClient.subscribe(`/user/${currentChat.id}`, onMessageReceive);
 
-      return () => {
-        subscription.unsubscribe();
-      };
+      return () => subscription.unsubscribe();
     }
   }, [isConnected, stompClient, currentChat]);
 
-  // Effect to handle sending a new message via WebSocket
   useEffect(() => {
     if (message.newMessage && isConnected && stompClient && currentChat?.id) {
-      stompClient.send("/app/message", {}, JSON.stringify(message.newMessage));
+      stompClient.send(
+        "/app/message",
+        {},
+        JSON.stringify(message.newMessage)
+      );
       setMessages((prevMessages) => [...prevMessages, message.newMessage]);
     }
   }, [message.newMessage, isConnected, stompClient, currentChat]);
 
-  // Effect to set the messages state from the store
   useEffect(() => {
     if (message.messages) {
       setMessages(message.messages);
     }
   }, [message.messages]);
 
-  // Effect to get all messages when the current chat changes
   useEffect(() => {
     if (currentChat?.id) {
       dispatch(getAllMessages({ chatId: currentChat.id, token }));
     }
   }, [currentChat, message.newMessage]);
 
-  // Effect to get user chats and groups
   useEffect(() => {
     dispatch(getUsersChat({ token }));
   }, [chat.createdChat, chat.createdGroup]);
 
-  // Function to handle opening the user menu
-  const handleClick = (e) => {
-    setAnchorEl(e.currentTarget);
-  };
-
-  // Function to handle closing the user menu
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  // Function to handle clicking on a chat card
-  const handleClickOnChatCard = (userId) => {
+  const handleClick = (e) => setAnchorEl(e.currentTarget);
+  const handleClose = () => setAnchorEl(null);
+  const handleClickOnChatCard = (userId) =>
     dispatch(createChat({ token, data: { userId } }));
-  };
+  const handleSearch = (keyword) => dispatch(searchUser({ keyword, token }));
 
-  // Function to handle user search
-  const handleSearch = (keyword) => {
-    dispatch(searchUser({ keyword, token }));
-  };
-
-  // Function to create a new message
   const handleCreateNewMessage = () => {
     dispatch(
       createMessage({
@@ -181,78 +146,60 @@ function HomePage() {
         data: { chatId: currentChat.id, content: content },
       })
     );
-    setContent(""); // Clear content after sending
+    setContent("");
   };
 
-  // Effect to get the current user's information
   useEffect(() => {
     dispatch(currentUser(token));
   }, [token]);
 
-  // Function to set the current chat
-  const handleCurrentChat = (item) => {
-    setCurrentChat(item);
-  };
+  const handleCurrentChat = (item) => setCurrentChat(item);
 
-  // Effect to fetch messages when chat changes
   useEffect(() => {
-    chat?.chats && Array.isArray(chat.chats) &&
+    chat?.chats &&
+      Array.isArray(chat.chats) &&
       chat.chats.forEach((item) => {
         dispatch(getAllMessages({ chatId: item.id, token }));
       });
   }, [chat?.chats, token, dispatch]);
 
-  // Effect to update lastMessages when messages change
   useEffect(() => {
     const prevLastMessages = { ...lastMessages };
     if (message.messages && message.messages.length > 0) {
       message.messages.forEach((msg) => {
         prevLastMessages[msg.chat.id] = msg;
       });
-
       setLastMessages(prevLastMessages);
     }
   }, [message.messages]);
 
-  // Function to navigate to the user's profile
-  const handleNavigate = () => {
-    setIsProfile(true);
-  };
+  const handleNavigate = () => setIsProfile(true);
+  const handleCloseOpenProfile = () => setIsProfile(false);
+  const handleCreateGroup = () => setIsGroup(true);
 
-  // Function to close the user's profile
-  const handleCloseOpenProfile = () => {
-    setIsProfile(false);
-  };
-
-  // Function to handle creating a new group
-  const handleCreateGroup = () => {
-    setIsGroup(true);
-  };
-
-  // Function to handle user logout
   const handleLogout = () => {
     try {
       if (stompClient && isConnected) {
         stompClient.deactivate();
         setIsConnected(false);
       }
-    } catch (e) { }
+    } catch (e) {}
     dispatch(logoutAction());
     navigate("/signin");
   };
 
-  // Effect to check if the user is authenticated
   useEffect(() => {
     if (!auth.reqUser) {
       navigate("/signin");
     }
   }, [auth.reqUser]);
-  return (
 
+  return (
     <div className="relative">
       <div className="w-[100vw] py-14 bg-[#00a884]">
-        <div className="flex bg-[#f0f2f5] h-[90vh] absolute top-[5vh] left-[2vw] w-[96vw]">
-          <div className="left w-[30%] h-full bg-[#e8e9ec]">
+        <div className="flex bg-[#f0f2f5] h-[90vh] absolute top-[5vh] left-[2vw] w-[96vw] rounded-lg shadow-lg overflow-hidden">
+          {/* Sidebar */}
+          <div className="left w-[30%] h-full bg-white/70 backdrop-blur-lg shadow-md">
             {isProfile && (
               <div className="w-full h-full">
                 <Profile handleCloseOpenProfile={handleCloseOpenProfile} />
@@ -289,12 +236,13 @@ function HomePage() {
               </div>
             )}
           </div>
-          {/* Default Chattingo Page */}
+
+          {/* Default Page */}
           {!currentChat?.id && (
-            <div className="w-[70%] flex flex-col items-center justify-center h-full">
+            <div className="w-[70%] flex flex-col items-center justify-center h-full bg-[#ece5dd]">
               <div className="max-w-[70%] text-center">
                 <img
-                  className="ml-11 lg:w-[75%] "
+                  className="ml-11 lg:w-[75%]"
                   src="https://cdn.pixabay.com/photo/2015/08/03/13/58/whatsapp-873316_640.png"
                   alt="chattingo-icon"
                 />
@@ -306,10 +254,19 @@ function HomePage() {
             </div>
           )}
 
-          {/* Message Section */}
+          {/* Chat Window */}
           {currentChat?.id && (
-            <div className="w-[70%] relative  bg-blue-200">
-              <div className="header absolute top-0 w-full bg-[#f0f2f5]">
+            <div
+              className="w-[70%] relative"
+              style={{
+                backgroundImage:
+                  "url('https://www.transparenttextures.com/patterns/cubes.png')",
+                backgroundColor: "#ece5dd",
+                backgroundRepeat: "repeat",
+              }}
+            >
+              {/* Header */}
+              <div className="header absolute top-0 w-full bg-[#f0f2f5] shadow-md z-10">
                 <div className="flex justify-between">
                   <div className="py-3 space-x-4 flex items-center px-3">
                     <img
@@ -317,57 +274,62 @@ function HomePage() {
                       src={
                         currentChat.group
                           ? currentChat.chat_image ||
-                          "https://media.istockphoto.com/id/521977679/photo/silhouette-of-adult-woman.webp?b=1&s=170667a&w=0&k=20&c=wpJ0QJYXdbLx24H5LK08xSgiQ3zNkCAD2W3F74qlUL0="
+                            "https://media.istockphoto.com/id/521977679/photo/silhouette-of-adult-woman.webp"
                           : auth.reqUser?.id !== currentChat.users[0]?.id
-                            ? currentChat.users[0]?.profile ||
-                            "https://media.istockphoto.com/id/521977679/photo/silhouette-of-adult-woman.webp?b=1&s=170667a&w=0&k=20&c=wpJ0QJYXdbLx24H5LK08xSgiQ3zNkCAD2W3F74qlUL0="
-                            : currentChat.users[1]?.profile ||
-                            "https://media.istockphoto.com/id/521977679/photo/silhouette-of-adult-woman.webp?b=1&s=170667a&w=0&k=20&c=wpJ0QJYXdbLx24H5LK08xSgiQ3zNkCAD2W3F74qlUL0="
+                          ? currentChat.users[0]?.profile ||
+                            "https://media.istockphoto.com/id/521977679/photo/silhouette-of-adult-woman.webp"
+                          : currentChat.users[1]?.profile ||
+                            "https://media.istockphoto.com/id/521977679/photo/silhouette-of-adult-woman.webp"
                       }
                       alt="profile"
                     />
-                    <p>
+                    <p className="font-semibold text-gray-700">
                       {currentChat.group
                         ? currentChat.chatName
                         : auth.reqUser?.id !== currentChat.users[0]?.id
-                          ? currentChat.users[0].name
-                          : currentChat.users[1].name}
+                        ? currentChat.users[0].name
+                        : currentChat.users[1].name}
                     </p>
                   </div>
-                  <div className="flex py-3 space-x-4 items-center px-3">
+                  <div className="flex py-3 space-x-4 items-center px-3 text-gray-600">
                     <AiOutlineSearch />
                     <BsThreeDotsVertical />
                   </div>
                 </div>
               </div>
 
-              {/* Message Section */}
-              <div className="px-10 h-[85vh] overflow-y-scroll pb-10" ref={messageContainerRef}>
-                <div className="space-y-1 w-full flex flex-col justify-center items-end  mt-20 py-2">
+              {/* Messages */}
+              <div
+                className="px-10 h-[85vh] overflow-y-scroll pb-10 pt-20"
+                ref={messageContainerRef}
+              >
+                <div className="space-y-2 w-full flex flex-col py-2">
                   {messages?.length > 0 &&
                     messages?.map((item, i) => (
                       <MessageCard
                         key={i}
-                        isReqUserMessage={item?.user?.id !== auth?.reqUser?.id}
+                        isReqUserMessage={item?.user?.id === auth?.reqUser?.id}
                         content={item.content}
                         timestamp={item.timestamp}
-                        profilePic={item?.user?.profile || "https://media.istockphoto.com/id/521977679/photo/silhouette-of-adult-woman.webp?b=1&s=170667a&w=0&k=20&c=wpJ0QJYXdbLx24H5LK08xSgiQ3zNkCAD2W3F74qlUL0="}
+                        profilePic={
+                          item?.user?.profile ||
+                          "https://media.istockphoto.com/id/521977679/photo/silhouette-of-adult-woman.webp"
+                        }
                       />
                     ))}
                 </div>
               </div>
 
-              {/* Footer Section */}
-              <div className="footer bg-[#f0f2f5] absolute bottom-0 w-full py-3 text-2xl">
+              {/* Footer */}
+              <div className="footer bg-[#f0f2f5] absolute bottom-0 w-full py-3 text-2xl shadow-md">
                 <div className="flex justify-between items-center px-5 relative">
                   <BsEmojiSmile className="cursor-pointer" />
                   <ImAttachment />
-
                   <input
                     className="py-2 outline-none border-none bg-white pl-4 rounded-md w-[85%]"
                     type="text"
                     onChange={(e) => setContent(e.target.value)}
-                    placeholder="Type message"
+                    placeholder="Type a message"
                     value={content}
                     onKeyPress={(e) => {
                       if (e.key === "Enter") {
