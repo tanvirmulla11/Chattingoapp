@@ -1,25 +1,36 @@
-import React from 'react';
+import React from "react";
 
-const MessageCard = ({ isReqUserMessage, content, timestamp, profilePic }) => {
+function MessageCard({ isReqUserMessage, content, timestamp, profilePic }) {
   return (
-    <div className={`flex w-full ${isReqUserMessage ? 'justify-start' : 'justify-end'} my-2`}>
-      {!isReqUserMessage && profilePic && (
-        <img src={profilePic} alt="profile" className="w-8 h-8 rounded-full mr-2" />
+    <div
+      className={`flex items-end ${
+        isReqUserMessage ? "justify-end" : "justify-start"
+      }`}
+    >
+      {!isReqUserMessage && (
+        <img
+          src={profilePic}
+          alt="profile"
+          className="w-8 h-8 rounded-full mr-2"
+        />
       )}
       <div
-        className={`max-w-xs px-4 py-2 rounded-lg ${
-          isReqUserMessage ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'
+        className={`max-w-[60%] px-4 py-2 rounded-xl shadow-md ${
+          isReqUserMessage
+            ? "bg-[#d9fdd3] self-end text-right" // green bubble for sender
+            : "bg-white self-start text-left" // white bubble for receiver
         }`}
       >
-        <p>{content}</p>
-        {timestamp && (
-          <span className="text-xs text-gray-600 mt-1">
-            {new Date(timestamp).toLocaleTimeString()}
-          </span>
-        )}
+        <p className="text-gray-800">{content}</p>
+        <span className="text-xs text-gray-500 block mt-1">
+          {new Date(timestamp).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </span>
       </div>
     </div>
   );
-};
+}
 
 export default MessageCard;
