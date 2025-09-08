@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import "../HomePage.css";
 import { useNavigate } from "react-router-dom";
-import Profile from "./Profile/Profile";
+import Profile from "./Profile";
 import CreateGroup from "./Group/CreateGroup";
 import { useDispatch, useSelector } from "react-redux";
 import { currentUser, logoutAction, searchUser } from "../Redux/Auth/Action";
