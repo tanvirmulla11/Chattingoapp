@@ -107,17 +107,6 @@ function HomePage() {
   }, [isConnected, stompClient, currentChat]);
 
   useEffect(() => {
-    if (message.newMessage && isConnected && stompClient && currentChat?.id) {
-      stompClient.send(
-        "/app/message",
-        {},
-        JSON.stringify(message.newMessage)
-      );
-      setMessages((prevMessages) => [...prevMessages, message.newMessage]);
-    }
-  }, [message.newMessage, isConnected, stompClient, currentChat]);
-
-  useEffect(() => {
     if (message.messages) {
       setMessages(message.messages);
     }
@@ -127,7 +116,7 @@ function HomePage() {
     if (currentChat?.id) {
       dispatch(getAllMessages({ chatId: currentChat.id, token }));
     }
-  }, [currentChat, message.newMessage]);
+  }, [currentChat]);
 
   useEffect(() => {
     dispatch(getUsersChat({ token }));
@@ -139,13 +128,34 @@ function HomePage() {
     dispatch(createChat({ token, data: { userId } }));
   const handleSearch = (keyword) => dispatch(searchUser({ keyword, token }));
 
-  const handleCreateNewMessage = () => {
+  // ✅ New unified sendMessage function
+  const sendMessage = () => {
+    if (!content.trim() || !currentChat) return;
+
+    const chatMessage = {
+      chatId: currentChat.id,
+      content: content,
+      senderId: auth?.reqUser?.id,
+      timestamp: new Date(),
+    };
+
+    // Send via STOMP
+    if (stompClient && isConnected) {
+      stompClient.send("/app/message", {}, JSON.stringify(chatMessage));
+    }
+
+    // Save to DB
     dispatch(
       createMessage({
         token,
         data: { chatId: currentChat.id, content: content },
       })
     );
+
+    // Optimistic UI update
+    setMessages((prev) => [...prev, chatMessage]);
+
+    // Clear input
     setContent("");
   };
 
@@ -333,8 +343,7 @@ function HomePage() {
                     value={content}
                     onKeyPress={(e) => {
                       if (e.key === "Enter") {
-                        handleCreateNewMessage();
-                        setContent("");
+                        sendMessage();
                       }
                     }}
                   />
