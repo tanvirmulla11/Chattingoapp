@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import "../HomePage.css";
+import "./HomePage.css";
 import { useNavigate } from "react-router-dom";
 import Profile from "./Profile";
 import CreateGroup from "./Group/CreateGroup";
