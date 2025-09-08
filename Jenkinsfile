@@ -33,7 +33,7 @@ pipeline {
 
         stage('Image Scan') { 
             steps {
-                echo "🛡️ Scanning Docker images..."
+                echo " Scanning Docker images..."
                 sh """
                   trivy image $REGISTRY/chattingo-frontend:$IMAGE_TAG || true
                   trivy image $REGISTRY/chattingo-backend:$IMAGE_TAG || true
