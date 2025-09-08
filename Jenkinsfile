@@ -16,7 +16,7 @@ pipeline {
 
         stage('Image Build') { 
             steps {
-                echo "🚀 Building Docker images..."
+                echo " Building Docker images..."
                 sh """
                   docker build -t $REGISTRY/chattingo-frontend:$IMAGE_TAG ./frontend
                   docker build -t $REGISTRY/chattingo-backend:$IMAGE_TAG ./backend
