@@ -1,6 +1,6 @@
 // Jenkinsfile: Chattingo CI/CD Pipeline
 // Author: Tanvir Mulla
-// Description: CI/CD pipeline for Chattingo app (Frontend + Backend) with email notifications
+// Description: CI/CD pipeline for Chattingo app (Frontend + Backend) without email notifications
 
 pipeline {
     agent any
@@ -86,7 +86,7 @@ pipeline {
 
         stage('Deploy on VPS') {
             steps {
-                echo " Deploying containers on VPS..."
+                echo "Deploying containers on VPS..."
                 sshagent(credentials: ['hostinger-ssh']) {
                     sh """
                         ssh -o StrictHostKeyChecking=no root@72.60.111.20 '
@@ -98,24 +98,5 @@ pipeline {
             }
         }
 
-    }
-
-    post {
-        success {
-            emailext(
-                subject: "✅ SUCCESS: Chattingo Build #${BUILD_NUMBER}",
-                body: "The Jenkins build ${BUILD_NUMBER} for Chattingo was successful.\nCheck details here: ${BUILD_URL}",
-                to: "tanvirmulla73@gmail.com" 
-                attachLog: true
-            )
-        }
-        failure {
-            emailext(
-                subject: "❌ FAILURE: Chattingo Build #${BUILD_NUMBER}",
-                body: "The Jenkins build ${BUILD_NUMBER} for Chattingo failed.\nCheck details here: ${BUILD_URL}",
-                to: "tanvirmulla73@gmail.com" 
-                attachLog: true
-            )
-        }
     }
 }
