@@ -36,6 +36,7 @@ function HomePage() {
   const [lastMessages, setLastMessages] = useState({});
   const messageContainerRef = useRef(null);
 
+  // auto-scroll when messages update
   useEffect(() => {
     if (messageContainerRef.current) {
       messageContainerRef.current.scrollTop =
@@ -43,6 +44,7 @@ function HomePage() {
     }
   }, [messages]);
 
+  // WebSocket connect
   const connect = () => {
     if (!token) return;
     const client = new Client({
@@ -84,6 +86,7 @@ function HomePage() {
     setMessages((prevMessages) => [...prevMessages, receivedMessage]);
   };
 
+  // Connect on mount
   useEffect(() => {
     connect();
     return () => {
@@ -96,6 +99,7 @@ function HomePage() {
     };
   }, []);
 
+  // Re-subscribe when chat changes
   useEffect(() => {
     if (isConnected && stompClient && currentChat?.id) {
       const subscription = currentChat.group
@@ -106,18 +110,21 @@ function HomePage() {
     }
   }, [isConnected, stompClient, currentChat]);
 
+  // Load messages from store
   useEffect(() => {
     if (message.messages) {
       setMessages(message.messages);
     }
   }, [message.messages]);
 
+  // Fetch messages when chat changes
   useEffect(() => {
     if (currentChat?.id) {
       dispatch(getAllMessages({ chatId: currentChat.id, token }));
     }
   }, [currentChat]);
 
+  // Load all chats
   useEffect(() => {
     dispatch(getUsersChat({ token }));
   }, [chat.createdChat, chat.createdGroup]);
@@ -128,7 +135,7 @@ function HomePage() {
     dispatch(createChat({ token, data: { userId } }));
   const handleSearch = (keyword) => dispatch(searchUser({ keyword, token }));
 
-  // ✅ New unified sendMessage function
+  // ✅ Safe sendMessage function
   const sendMessage = () => {
     if (!content.trim() || !currentChat) return;
 
@@ -139,12 +146,12 @@ function HomePage() {
       timestamp: new Date(),
     };
 
-    // Send via STOMP
+    // WebSocket send
     if (stompClient && isConnected) {
       stompClient.send("/app/message", {}, JSON.stringify(chatMessage));
     }
 
-    // Save to DB
+    // Save in DB
     dispatch(
       createMessage({
         token,
@@ -155,7 +162,6 @@ function HomePage() {
     // Optimistic UI update
     setMessages((prev) => [...prev, chatMessage]);
 
-    // Clear input
     setContent("");
   };
 
@@ -165,6 +171,7 @@ function HomePage() {
 
   const handleCurrentChat = (item) => setCurrentChat(item);
 
+  // Preload last messages
   useEffect(() => {
     chat?.chats &&
       Array.isArray(chat.chats) &&
